@@ -1,6 +1,9 @@
 import type { dt, PluralOptions } from "./define-translation";
 import type { I18nMessage, LanguageMessages } from "./types";
 
+/**
+ * Generates all posible dot-notation paths for accessing nested translation keys.
+ */
 type DotPath<L extends LanguageMessages> = {
   [K in keyof L]: L[K] extends I18nMessage
     ? `${K & string}`
@@ -9,22 +12,37 @@ type DotPath<L extends LanguageMessages> = {
       : never;
 }[keyof L];
 
+/**
+ * Filters translation paths to those that don't require parameters.
+ */
 type PathsWithoutParams<L extends LanguageMessages> = {
   [K in DotPath<L>]: Param<K, L> extends object ? never : K;
 }[DotPath<L>];
+/**
+ * Filters translation paths to those that require parameters.
+ */
 type PathsWithParams<L extends LanguageMessages> = {
   [K in DotPath<L>]: Param<K, L> extends object ? K : never;
 }[DotPath<L>];
 
+/**
+ * Extracts the parameter type definition for a specific translation path.
+ */
 type Param<P extends string, L extends LanguageMessages> = GetParams<
   AccessProperty<P, L>
 >;
 
+/**
+ * Extracts parameter types from a translation definition.
+ */
 type GetParams<T extends I18nMessage> =
   T[1] extends Record<infer Type, Record<infer Name, unknown>>
     ? GetParamType<Name & string, Type & string> & GetVariableParams<T[0]>
     : GetVariableParams<T[0]>;
 
+/**
+ * Extracts untyped variable parameters from translation strings.
+ */
 type GetVariableParams<S extends string> =
   S extends `${string}{${infer Param}}${infer Rest}`
     ? Param extends `${string}:${string}`
@@ -32,10 +50,16 @@ type GetVariableParams<S extends string> =
       : Record<Param, string> & GetVariableParams<Rest>
     : unknown;
 
+/**
+ * Maps parameter types to their corresponding TypeScript types.
+ */
 type GetParamType<N extends string, T extends string> = T extends "plural"
   ? Record<N, number>
   : never;
 
+/**
+ * Accesses a nested property in the translation object using dot notation.
+ */
 type AccessProperty<
   P extends string,
   L extends LanguageMessages,
@@ -51,27 +75,49 @@ type AccessProperty<
       : never
     : never;
 
+/**
+ * Normalizes translation definitions to a consistent tuple format.
+ */
 type TranslationDefinition<T extends I18nMessage> = T extends string
   ? [T, unknown]
   : T;
 
+/**
+ * Configuration interface for initializing the internationalization system.
+ */
 type InitI18nConfig<
   T extends Record<string, LanguageMessages>,
   L extends keyof T,
 > = {
+  /**
+   * The primary locale to use for translations.
+   */
   locale: keyof T | (string & {});
+  /**
+   * Object containing all translation definitions organized by locale. Each value must conform to the `LanguageMessages` type.
+   */
   translations: T;
+  /**
+   * Fallback locale(s) to use when a translation is missing in the primary locale. Can be a single locale or an array of locales for fallback chain.
+   */
   fallback: L | L[];
 };
 
+/**
+ * Initializes the Voxnova internationalization system with type-safe translation functions.
+ *
+ * This function creates a translation function that provides compile-time type safety for translation keys and parameters, along with runtime locale resolution and fallback handling.
+ */
 export function initI18n<
   T extends Record<string, LanguageMessages>,
   L extends keyof T,
 >(config: InitI18nConfig<T, L>) {
+  // Convert fallback configuration to array for uniform processing
   const fallbackLocales = Array.isArray(config.fallback)
     ? config.fallback
     : [config.fallback];
 
+  // Create ordered set of locales for resolution with parent locale fallback
   const orderedLocales = new Set([
     ...getOrderedLocaleAndParentLocales(
       (config.locale as string).toLowerCase(),
@@ -81,12 +127,16 @@ export function initI18n<
     ),
   ]);
 
+  /**
+   * This function resolves translations using the locale fallback chain and performs parameter substitution.
+   */
   function t(key: PathsWithoutParams<T[L]>): string;
   function t<P extends PathsWithParams<T[L]>>(
     key: P,
     args: Param<P, T[L]>,
   ): string;
   function t<P extends DotPath<T[L]>>(key: P, args?: Param<P, T[L]>): string {
+    // Try to resolve translation from each locale in the fallback chain
     for (const locale of orderedLocales) {
       const translationObject = config.translations[locale];
       if (!translationObject) continue;
@@ -101,16 +151,21 @@ export function initI18n<
       return translation;
     }
 
+    // Fallback to the key if no translation found
     return key;
   }
 
   return t;
 }
 
+/**
+ * Generates an ordered list of locales including parent locales for fallback resolution.
+ */
 function getOrderedLocaleAndParentLocales(locale: string): string[] {
   const locales: string[] = [];
   let parentLocale = locale;
 
+  // Iteratively strip locale components to build hierarchy
   while (parentLocale !== "") {
     locales.push(parentLocale);
     parentLocale = parentLocale.replace(/-?[^-]+$/, "");
@@ -119,6 +174,9 @@ function getOrderedLocaleAndParentLocales(locale: string): string[] {
   return locales;
 }
 
+/**
+ * Retrieves a translation from the translation object and performs parameter substitution.
+ */
 function getTranslation(
   object: LanguageMessages,
   key: string,
@@ -131,6 +189,9 @@ function getTranslation(
   return performSubstitution(property[0], property[1], args, locale);
 }
 
+/**
+ * Retrieves a translation property using dot-notation path traversal.
+ */
 function getProperty(
   object: LanguageMessages,
   key: string,
@@ -138,6 +199,7 @@ function getProperty(
   const keys = key.split(".");
   let obj = object;
 
+  // Traverse the object path
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     if (!k) continue;
@@ -145,8 +207,9 @@ function getProperty(
     const newObject = obj[k];
     if (!newObject) return undefined;
 
+    // Check if we've reached a translation message
     if (typeof newObject === "string" || Array.isArray(newObject)) {
-      if (i !== keys.length - 1) return undefined;
+      if (i !== keys.length - 1) return undefined; // Did not reach the last element
 
       return Array.isArray(newObject) ? newObject : [newObject, null];
     }
@@ -157,6 +220,9 @@ function getProperty(
   return undefined;
 }
 
+/**
+ * Processes translation strings by replacing parameter placeholders with provided values.
+ */
 function performSubstitution(
   string: string,
   paramOptions: ReturnType<typeof dt>[1],
@@ -164,43 +230,54 @@ function performSubstitution(
   locale: string,
 ): string {
   return Object.entries(args).reduce((result, [argName, argValue]) => {
+    // Match parameter with optional type annotation
     const match = result.match(`{${argName}(?::([^}]+))?}`);
     const [replaceKey, argType] = match ? match : [`{${argName}}`, undefined];
 
     switch (argType) {
       case "plural": {
+        // Validate parameter type
         if (typeof argValue !== "number") {
-          throw new Error("Invalid argument type");
+          throw new Error(
+            `Invalid argument type for parameter '${argName}': expected number, received ${typeof argValue}`,
+          );
         }
 
+        // Extract plural configuration
         const pluralOptions = (
           paramOptions as
             | Record<"plural", Record<string, PluralOptions>>
             | undefined
         )?.plural?.[argName];
         if (!pluralOptions) {
-          throw new Error("Plural options must be defined");
+          throw new Error(
+            `Plural options must be defined for parameter '${argName}'. Make sure to include plural configuration in your dt() function call.`,
+          );
         }
 
+        // Determine plural form using Intl.PluralRules
         const pluralRules = new Intl.PluralRules(locale, {
           type: pluralOptions.type,
         });
 
-        const replacement =
-          pluralOptions[pluralRules.select(argValue)] ?? pluralOptions.other;
+        const pluralForm = pluralRules.select(argValue);
+        const replacement = pluralOptions[pluralForm] ?? pluralOptions.other;
 
+        // Apply number formatting if specified
         const numberFormatter = new Intl.NumberFormat(
           locale,
           pluralOptions.formatter,
         );
+        const formattedValue = numberFormatter.format(argValue);
 
-        return result.replace(
+        return result.replaceAll(
           replaceKey,
-          replacement.replaceAll("{?}", numberFormatter.format(argValue)),
+          replacement.replaceAll("{?}", formattedValue),
         );
       }
       default: {
-        return result.replace(replaceKey, String(argValue));
+        // Simple string substitution for untyped params
+        return result.replaceAll(replaceKey, String(argValue));
       }
     }
   }, string);
