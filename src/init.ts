@@ -307,7 +307,7 @@ function performSubstitution(
       }
       case "date": {
         // Validate parameter type
-        if (!(argValue instanceof Date)) {
+        if (!(argValue instanceof Date) || Number.isNaN(argValue.getTime())) {
           throw new Error(
             `Invalid argument type for parameter '${argName}': expected date, received ${typeof argValue}`,
           );
