@@ -1,6 +1,7 @@
 import type {
   DateOptions,
   dt,
+  ListOptions,
   NumberOptions,
   PluralOptions,
 } from "./define-translation";
@@ -64,7 +65,9 @@ type GetParamType<N extends string, T extends string> = T extends
   ? Record<N, number>
   : T extends "date"
     ? Record<N, Date>
-    : never;
+    : T extends "list"
+      ? Record<N, string[]>
+      : never;
 
 /**
  * Accesses a nested property in the translation object using dot notation.
@@ -189,7 +192,7 @@ function getOrderedLocaleAndParentLocales(locale: string): string[] {
 function getTranslation(
   object: LanguageMessages,
   key: string,
-  args: Record<string, string | number | Date>,
+  args: Record<string, string | number | Date | string[]>,
   locale: string,
 ): string | undefined {
   const property = getProperty(object, key);
@@ -235,7 +238,7 @@ function getProperty(
 function performSubstitution(
   string: string,
   paramOptions: ReturnType<typeof dt>[1],
-  args: Record<string, string | number | Date>,
+  args: Record<string, string | number | Date | string[]>,
   locale: string,
 ): string {
   return Object.entries(args).reduce((result, [argName, argValue]) => {
@@ -323,6 +326,27 @@ function performSubstitution(
         // Apply date formatting
         const dateFormatter = new Intl.DateTimeFormat(locale, dateOptions);
         const formattedValue = dateFormatter.format(argValue);
+
+        return result.replaceAll(replaceKey, formattedValue);
+      }
+      case "list": {
+        // Validate parameter type
+        if (!Array.isArray(argValue)) {
+          throw new Error(
+            `Invalid argument type for parameter '${argName}': expected array, received ${typeof argValue}`,
+          );
+        }
+
+        // Extract list configuration
+        const listOptions = (
+          paramOptions as
+            | Record<"list", Record<string, ListOptions>>
+            | undefined
+        )?.list?.[argName];
+
+        // Apply list formatting
+        const listFormatter = new Intl.ListFormat(locale, listOptions);
+        const formattedValue = listFormatter.format(argValue);
 
         return result.replaceAll(replaceKey, formattedValue);
       }
