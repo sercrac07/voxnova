@@ -42,8 +42,9 @@ type Param<P extends string, L extends LanguageMessages> = GetParams<
  * Extracts parameter types from a translation definition.
  */
 type GetParams<T extends I18nMessage> =
-  T[1] extends Record<infer Type, Record<infer Name, unknown>>
-    ? GetParamType<Name & string, Type & string> & GetVariableParams<T[0]>
+  T[1] extends Record<infer Type, Record<infer Name, infer Option>>
+    ? GetParamType<Name & string, Type & string, Option> &
+        GetVariableParams<T[0]>
     : GetVariableParams<T[0]>;
 
 /**
@@ -59,7 +60,7 @@ type GetVariableParams<S extends string> =
 /**
  * Maps parameter types to their corresponding TypeScript types.
  */
-type GetParamType<N extends string, T extends string> = T extends
+type GetParamType<N extends string, T extends string, O> = T extends
   | "plural"
   | "number"
   ? Record<N, number>
@@ -67,7 +68,11 @@ type GetParamType<N extends string, T extends string> = T extends
     ? Record<N, Date>
     : T extends "list"
       ? Record<N, string[]>
-      : never;
+      : T extends "enum"
+        ? O extends Record<string, string>
+          ? Record<N, keyof O>
+          : never
+        : never;
 
 /**
  * Accesses a nested property in the translation object using dot notation.
@@ -349,6 +354,30 @@ function performSubstitution(
         const formattedValue = listFormatter.format(argValue);
 
         return result.replaceAll(replaceKey, formattedValue);
+      }
+      case "enum": {
+        // Validate parameter type
+        if (typeof argValue !== "string") {
+          throw new Error(
+            `Invalid argument type for parameter '${argName}': expected string, received ${typeof argValue}`,
+          );
+        }
+
+        // Extract enum configuration
+        const enumOptions = (
+          paramOptions as
+            | Record<"enum", Record<string, Record<string, string>>>
+            | undefined
+        )?.enum?.[argName];
+        const replacement = enumOptions?.[argValue];
+
+        if (!replacement) {
+          throw new Error(
+            `Missing replacement value for parameter '${argName}' (${argValue})`,
+          );
+        }
+
+        return result.replaceAll(replaceKey, replacement);
       }
       default: {
         // Simple string substitution for untyped params

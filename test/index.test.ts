@@ -59,4 +59,13 @@ describe("Voxnova", () => {
       en.list[0].replace("{foods:list}", "apple, kiwi, and banana"),
     );
   });
+
+  it("should return messages with enum params", () => {
+    expect(t("enum", { hobby: "developer" })).toBe(
+      en.enum[0].replace("{hobby:enum}", "developer"),
+    );
+    expect(t("enum", { hobby: "runner" })).toBe(
+      en.enum[0].replace("{hobby:enum}", "runner"),
+    );
+  });
 });

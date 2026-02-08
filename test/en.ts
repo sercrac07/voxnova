@@ -20,4 +20,7 @@ export default {
   list: dt("Your favourite foods are: {foods:list}", {
     list: { foods: { type: "conjunction" } },
   }),
+  enum: dt("You chose {hobby:enum} as your hobby", {
+    enum: { hobby: { runner: "runner", developer: "developer" } },
+  }),
 } as const satisfies LanguageMessages;

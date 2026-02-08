@@ -19,7 +19,9 @@ type ParseOption<N extends string, T extends string> = T extends "plural"
       ? Record<"date", Record<N, DateOptions>>
       : T extends "list"
         ? Record<"list", Record<N, ListOptions>>
-        : never;
+        : T extends "enum"
+          ? Record<"enum", Record<N, Record<string, string>>>
+          : never;
 
 /**
  * Defines pluralization options for a parameter using Intl-compatible rules.
@@ -68,10 +70,11 @@ export type ListOptions = Intl.ListFormatOptions;
  * - Numbers (`{name:number}`)
  * - Dates (`{name:date}`)
  * - Lists (`{name:list}`)
+ * - Enums (`{name:enum}`)
  */
-export function dt<S extends string>(
+export function dt<S extends string, O extends GetOptions<S>>(
   string: S,
-  options: GetOptions<S>,
-): [S, GetOptions<S>] {
+  options: O,
+): [S, O] {
   return [string, options];
 }
