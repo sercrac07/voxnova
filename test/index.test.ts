@@ -50,4 +50,13 @@ describe("Voxnova", () => {
       en.date[0].replace("{lastPurchase:date}", "Jan 1, 2000"),
     );
   });
+
+  it("should return messages with list params", () => {
+    expect(t("list", { foods: ["apple", "kiwi"] })).toBe(
+      en.list[0].replace("{foods:list}", "apple and kiwi"),
+    );
+    expect(t("list", { foods: ["apple", "kiwi", "banana"] })).toBe(
+      en.list[0].replace("{foods:list}", "apple, kiwi, and banana"),
+    );
+  });
 });

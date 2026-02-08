@@ -17,7 +17,9 @@ type ParseOption<N extends string, T extends string> = T extends "plural"
     ? Record<"number", Record<N, NumberOptions>>
     : T extends "date"
       ? Record<"date", Record<N, DateOptions>>
-      : never;
+      : T extends "list"
+        ? Record<"list", Record<N, ListOptions>>
+        : never;
 
 /**
  * Defines pluralization options for a parameter using Intl-compatible rules.
@@ -50,17 +52,22 @@ export type NumberOptions = Intl.NumberFormatOptions;
  * Defines date formatting options.
  */
 export type DateOptions = Intl.DateTimeFormatOptions;
+/**
+ * Defines list formatting options.
+ */
+export type ListOptions = Intl.ListFormatOptions;
 
 /**
  * Defines a translation with parameterized placeholders for compile-time type safety.
  *
  * The `dt` function (short for "define translation") creates typed translation objects that enforce parameter validation at compile time while maintaining runtime compatibility with the Voxnova i18n system.
  *
- * Support for:
+ * Supported types:
  *
  * - Plurarization (`{name:plural}`)
  * - Numbers (`{name:number}`)
  * - Dates (`{name:date}`)
+ * - Lists (`{name:list}`)
  */
 export function dt<S extends string>(
   string: S,
