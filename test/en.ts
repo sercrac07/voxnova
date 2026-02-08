@@ -17,4 +17,7 @@ export default {
   date: dt("Your last purchase was on {lastPurchase:date}", {
     date: { lastPurchase: { dateStyle: "medium" } },
   }),
+  list: dt("Your favourite foods are: {foods:list}", {
+    list: { foods: { type: "conjunction" } },
+  }),
 } as const satisfies LanguageMessages;
