@@ -14,4 +14,7 @@ export default {
   number: dt("The cost of this is {price:number}", {
     number: { price: { style: "currency", currency: "USD" } },
   }),
+  date: dt("Your last purchase was on {lastPurchase:date}", {
+    date: { lastPurchase: { dateStyle: "medium" } },
+  }),
 } as const satisfies LanguageMessages;

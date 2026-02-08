@@ -44,4 +44,10 @@ describe("Voxnova", () => {
       en.number[0].replace("{price:number}", "$12.13"),
     );
   });
+
+  it("should return messages with date params", () => {
+    expect(t("date", { lastPurchase: new Date("2000-01-01T12:00:00Z") })).toBe(
+      en.date[0].replace("{lastPurchase:date}", "Jan 1, 2000"),
+    );
+  });
 });

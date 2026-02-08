@@ -1,4 +1,9 @@
-import type { dt, NumberOptions, PluralOptions } from "./define-translation";
+import type {
+  DateOptions,
+  dt,
+  NumberOptions,
+  PluralOptions,
+} from "./define-translation";
 import type { I18nMessage, LanguageMessages } from "./types";
 
 /**
@@ -57,7 +62,9 @@ type GetParamType<N extends string, T extends string> = T extends
   | "plural"
   | "number"
   ? Record<N, number>
-  : never;
+  : T extends "date"
+    ? Record<N, Date>
+    : never;
 
 /**
  * Accesses a nested property in the translation object using dot notation.
@@ -182,7 +189,7 @@ function getOrderedLocaleAndParentLocales(locale: string): string[] {
 function getTranslation(
   object: LanguageMessages,
   key: string,
-  args: Record<string, string | number>,
+  args: Record<string, string | number | Date>,
   locale: string,
 ): string | undefined {
   const property = getProperty(object, key);
@@ -228,7 +235,7 @@ function getProperty(
 function performSubstitution(
   string: string,
   paramOptions: ReturnType<typeof dt>[1],
-  args: Record<string, string | number>,
+  args: Record<string, string | number | Date>,
   locale: string,
 ): string {
   return Object.entries(args).reduce((result, [argName, argValue]) => {
@@ -295,6 +302,27 @@ function performSubstitution(
         // Apply number formatting
         const numberFormatter = new Intl.NumberFormat(locale, numberOptions);
         const formattedValue = numberFormatter.format(argValue);
+
+        return result.replaceAll(replaceKey, formattedValue);
+      }
+      case "date": {
+        // Validate parameter type
+        if (!(argValue instanceof Date) || Number.isNaN(argValue.getTime())) {
+          throw new Error(
+            `Invalid argument type for parameter '${argName}': expected date, received ${typeof argValue}`,
+          );
+        }
+
+        // Extract date configuration
+        const dateOptions = (
+          paramOptions as
+            | Record<"date", Record<string, DateOptions>>
+            | undefined
+        )?.date?.[argName];
+
+        // Apply date formatting
+        const dateFormatter = new Intl.DateTimeFormat(locale, dateOptions);
+        const formattedValue = dateFormatter.format(argValue);
 
         return result.replaceAll(replaceKey, formattedValue);
       }
