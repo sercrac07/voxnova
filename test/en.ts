@@ -11,4 +11,7 @@ export default {
       messages: { one: "1 message", other: "{?} messages" },
     },
   }),
+  number: dt("The cost of this is {price:number}", {
+    number: { price: { style: "currency", currency: "USD" } },
+  }),
 } as const satisfies LanguageMessages;
