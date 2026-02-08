@@ -1,4 +1,4 @@
-import type { dt, PluralOptions } from "./define-translation";
+import type { dt, NumberOptions, PluralOptions } from "./define-translation";
 import type { I18nMessage, LanguageMessages } from "./types";
 
 /**
@@ -53,7 +53,9 @@ type GetVariableParams<S extends string> =
 /**
  * Maps parameter types to their corresponding TypeScript types.
  */
-type GetParamType<N extends string, T extends string> = T extends "plural"
+type GetParamType<N extends string, T extends string> = T extends
+  | "plural"
+  | "number"
   ? Record<N, number>
   : never;
 
@@ -274,6 +276,27 @@ function performSubstitution(
           replaceKey,
           replacement.replaceAll("{?}", formattedValue),
         );
+      }
+      case "number": {
+        // Validate parameter type
+        if (typeof argValue !== "number") {
+          throw new Error(
+            `Invalid argument type for parameter '${argName}': expected number, received ${typeof argValue}`,
+          );
+        }
+
+        // Extract number configuration
+        const numberOptions = (
+          paramOptions as
+            | Record<"number", Record<string, NumberOptions>>
+            | undefined
+        )?.number?.[argName];
+
+        // Apply number formatting
+        const numberFormatter = new Intl.NumberFormat(locale, numberOptions);
+        const formattedValue = numberFormatter.format(argValue);
+
+        return result.replaceAll(replaceKey, formattedValue);
       }
       default: {
         // Simple string substitution for untyped params
