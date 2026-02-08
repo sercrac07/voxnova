@@ -32,4 +32,16 @@ describe("Voxnova", () => {
       en.plural[0].replace("{messages:plural}", "2 messages"),
     );
   });
+
+  it("should return messages with number params", () => {
+    expect(t("number", { price: 12 })).toBe(
+      en.number[0].replace("{price:number}", "$12.00"),
+    );
+    expect(t("number", { price: 12.12 })).toBe(
+      en.number[0].replace("{price:number}", "$12.12"),
+    );
+    expect(t("number", { price: 12.129 })).toBe(
+      en.number[0].replace("{price:number}", "$12.13"),
+    );
+  });
 });
