@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Support for:
   - Variables
   - Plurarization (`Intl.PluralRules`)
-  - Numbers
+  - Numbers (`Intl.NumberFormat`)
+  - Dates (`Intl.DateTimeFormat`)
 - `initI18n()` for initializing the internationalization
 - `dt()` for defining message translation

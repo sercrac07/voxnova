@@ -15,7 +15,9 @@ type ParseOption<N extends string, T extends string> = T extends "plural"
   ? Record<"plural", Record<N, PluralOptions>>
   : T extends "number"
     ? Record<"number", Record<N, NumberOptions>>
-    : never;
+    : T extends "date"
+      ? Record<"date", Record<N, DateOptions>>
+      : never;
 
 /**
  * Defines pluralization options for a parameter using Intl-compatible rules.
@@ -44,6 +46,10 @@ export type PluralOptions = Partial<
  * Defines number formatting options.
  */
 export type NumberOptions = Intl.NumberFormatOptions;
+/**
+ * Defines date formatting options.
+ */
+export type DateOptions = Intl.DateTimeFormatOptions;
 
 /**
  * Defines a translation with parameterized placeholders for compile-time type safety.
@@ -54,6 +60,7 @@ export type NumberOptions = Intl.NumberFormatOptions;
  *
  * - Plurarization (`{name:plural}`)
  * - Numbers (`{name:number}`)
+ * - Dates (`{name:date}`)
  */
 export function dt<S extends string>(
   string: S,
