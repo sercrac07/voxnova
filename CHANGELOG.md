@@ -15,5 +15,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Numbers (`Intl.NumberFormat`)
   - Dates (`Intl.DateTimeFormat`)
   - Lists (`Intl.ListFormat`)
+  - Enums
 - `initI18n()` for initializing the internationalization
 - `dt()` for defining message translation
